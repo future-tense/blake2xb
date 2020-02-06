@@ -1,34 +1,26 @@
 import { Hash } from "@stablelib/hash";
-import { BLAKE2s, DIGEST_LENGTH, BLOCK_SIZE, Config } from "@stablelib/blake2s";
+import { BLAKE2b, DIGEST_LENGTH, BLOCK_SIZE, Config } from "@stablelib/blake2b";
 import { wipe } from "@stablelib/wipe";
 
 /**
- * Package blake2xs implements BLAKE2Xs extensible output function (XOF).
+ * Package blake2xb implements BLAKE2Xb extensible output function (XOF).
  */
 
 export { BLOCK_SIZE };
 
 /** Maximum output length */
-export const MAX_DIGEST_LENGTH = 65534;
+export const MAX_DIGEST_LENGTH = 4294967294;
 
 /** Indicates unknown output length  */
-const UNKNOWN_DIGEST_LENGTH = 65535;
-
-function nodeOffsetWithXOFDigestLength(nodeOffset: number, digestLength: number): number {
-    // Node offset is limited to 4 bytes in BLAKE2Xs.
-    if (nodeOffset > Math.pow(2, 32) - 1) {
-        throw new Error(`BLAKE2Xs: node offset ${nodeOffset} it too big`);
-    }
-    return digestLength * 0x100000000 + nodeOffset;
-}
+const UNKNOWN_DIGEST_LENGTH = 4294967295;
 
 /**
- * BLAKE2Xs extensible output function.
+ * BLAKE2Xb extensible output function.
  */
-export class BLAKE2Xs implements Hash {
+export class BLAKE2Xb implements Hash {
     readonly blockSize = BLOCK_SIZE;
 
-    private _hash: BLAKE2s; // root hash
+    private _hash: BLAKE2b; // root hash
     private _h0?: Uint8Array; // root hash digest. Undefined if hash is not finished yet
     private _buf = new Uint8Array(DIGEST_LENGTH); // output buffer
     private _bufPos = DIGEST_LENGTH; // position in output buffer, initialized to its end
@@ -36,7 +28,7 @@ export class BLAKE2Xs implements Hash {
     private _left: number; // number of bytes of digestLength left to generate
 
     /**
-     * Creates a new BLAKE2Xs instance with the given digest length. If digest
+     * Creates a new BLAKE2Xb instance with the given digest length. If digest
      * length is not given, it's considered unknown in advance, thus allowing
      * to generate any number of bytes up to 2^32-1.
      */
@@ -50,19 +42,15 @@ export class BLAKE2Xs implements Hash {
                 fanout: 1,
                 maxDepth: 1,
                 leafSize: 0,
-                nodeOffset: 0,
+                nodeOffsetLowBits: 0,
+                nodeOffsetHighBits: digestLength,
                 nodeDepth: 0,
                 innerDigestLength: 0,
                 lastNode: false
             }
         };
 
-        rootConfig.tree.nodeOffset = nodeOffsetWithXOFDigestLength(
-            rootConfig.tree.nodeOffset,
-            digestLength
-        );
-
-        this._hash = new BLAKE2s(DIGEST_LENGTH, rootConfig);
+        this._hash = new BLAKE2b(DIGEST_LENGTH, rootConfig);
 
         this._outConfig = {
             ...rootConfig,
@@ -71,7 +59,8 @@ export class BLAKE2Xs implements Hash {
                 fanout: 0,
                 maxDepth: 0,
                 leafSize: DIGEST_LENGTH,
-                nodeOffset: nodeOffsetWithXOFDigestLength(0, digestLength),
+                nodeOffsetLowBits: 0,
+                nodeOffsetHighBits: digestLength,
                 nodeDepth: 0,
                 innerDigestLength: DIGEST_LENGTH,
                 lastNode: false
@@ -102,12 +91,12 @@ export class BLAKE2Xs implements Hash {
             if (this._bufPos >= DIGEST_LENGTH) {
                 // Fill buffer.
                 const dlen = (this._left < DIGEST_LENGTH) ? this._left : DIGEST_LENGTH;
-                const h = new BLAKE2s(dlen, this._outConfig);
+                const h = new BLAKE2b(dlen, this._outConfig);
                 h.update(this._h0);
                 h.finish(this._buf);
                 h.clean();
                 this._bufPos = 0;
-                this._outConfig.tree!.nodeOffset++;
+                this._outConfig.tree!.nodeOffsetLowBits++;
             }
             dst[i] = this._buf[this._bufPos];
             this._bufPos++;
@@ -139,7 +128,7 @@ export class BLAKE2Xs implements Hash {
 }
 
 export function xof(digestLength: number, data: Uint8Array, key?: Uint8Array): Uint8Array {
-    const h = new BLAKE2Xs(digestLength, { key });
+    const h = new BLAKE2Xb(digestLength, { key });
     h.update(data);
     const out = h.digest();
     h.clean();
