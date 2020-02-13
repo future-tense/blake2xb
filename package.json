@@ -1,0 +1,32 @@
+{
+  "name": "@futuretense/blake2xb",
+  "version": "1.0.0",
+  "description": "",
+  "files": [
+    "lib"
+  ],
+  "main": "lib/commonjs/blake2xb.js",
+  "browser": "lib/esm/blake2xb.js",
+  "types": "lib/types/blake2xb.d.ts",
+  "scripts": {
+    "build": "npm run build-cjs && npm run build-esm",
+    "build-esm": "npx tsc -m es6 --outDir lib/esm",
+    "build-cjs": "npx tsc -m commonjs --outDir lib/commonjs",
+    "test": "npx ava-ts"
+  },
+  "contributors": [
+    "Dmitry Chestnykh",
+    "Johan Stén <johan@futuretense.io>"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@stablelib/blake2b": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^13.7.0",
+    "ava": "^3.2.0",
+    "ava-ts": "^0.25.2",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.7.5"
+  }
+}
