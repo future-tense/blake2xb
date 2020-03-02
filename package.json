@@ -1,7 +1,7 @@
 {
   "name": "@futuretense/blake2xb",
-  "version": "1.0.0",
-  "description": "",
+  "version": "1.0.1",
+  "description": "BLAKE2xb cryptographic extended output function (XOF)",
   "files": [
     "lib"
   ],
